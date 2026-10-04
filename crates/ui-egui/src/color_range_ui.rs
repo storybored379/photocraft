@@ -565,6 +565,23 @@ mod tests {
     }
 
     #[test]
+    fn dialog_shrinks_back_when_a_mode_needs_fewer_controls() {
+        let mut h = harness(app_with_doc());
+        open(h.state_mut());
+        h.run_steps(4);
+        let area = egui::Id::new(("dialog", dialog_id(h.state())));
+        let height = |h: &Harness<'static, PhotocraftApp>| h.ctx.memory(|m| m.area_rect(area)).map_or(0.0, |r| r.height());
+        set(&mut h, "select", json!("outOfGamut"));
+        let short = height(&h);
+        set(&mut h, "select", json!("midtones"));
+        let tall = height(&h);
+        assert!(tall > short + 40.0, "Midtones adds two sliders: {short} → {tall}");
+        set(&mut h, "select", json!("outOfGamut"));
+        let back = height(&h);
+        assert!((back - short).abs() < 1.0, "the dialog must shrink back, not keep an empty band above OK: {short} → {tall} → {back}");
+    }
+
+    #[test]
     fn ok_applies_one_undo_step() {
         let mut h = harness(app_with_doc());
         h.state_mut().run("select.rect", json!({"x": 0, "y": 20, "width": 5, "height": 5})).unwrap();

@@ -107,7 +107,9 @@ pub fn show(app: &mut PhotocraftApp, ctx: &egui::Context) {
                 }
             }
             ui.add_space(8.0);
-            ui.with_layout(egui::Layout::right_to_left(egui::Align::Center), |ui| {
+            // Align::Min, not Center: a centred row fills the height left over from last frame's
+            // (larger) size, so a dialog whose body gets shorter would never shrink back.
+            ui.with_layout(egui::Layout::right_to_left(egui::Align::Min), |ui| {
                 ui.spacing_mut().item_spacing.x = 10.0;
                 if matches!(d.kind, DialogKind::About | DialogKind::Error) {
                     if crate::widgets::primary_button(ui, "OK", 84.0).clicked() {
