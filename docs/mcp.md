@@ -35,3 +35,30 @@ existing poisoned-session recovery keeps serving. Invalid JSON lines receive `-3
 `photocraft://document` and `photocraft://commands` return live JSON matching `doc_inspect`
 and `command_list`. Resource reads are uncached; tool/resource catalogs are private and cached
 for ten minutes. List/read responses include the MCP 2026-07-28 result/cache fields.
+
+## Progress and cancellation
+
+A direct headless `command_run` of `file.export.renderVideo` reports frame counts when
+`_meta.progressToken` is present (a string or number). Notifications increase strictly,
+are throttled to at most ten per second except completion, and include `total`. No token
+means no progress notifications. Ping remains responsive while rendering.
+
+```json
+{"jsonrpc":"2.0","id":20,"method":"tools/call","params":{"name":"command_run","arguments":{"id":"file.export.renderVideo","params":{"dir":"frames","format":"png"}},"_meta":{"progressToken":"export-20"}}}
+{"jsonrpc":"2.0","method":"notifications/cancelled","params":{"requestId":20}}
+```
+
+Create a document and timeline first (`doc_new`, then `timeline.create`). Export uses the
+configured write root and creates `dir` beneath it. Filenames must be single components;
+absolute paths, traversal and escaping symlinks are rejected. Existing target filenames
+are refused, including symlinks, so a cancelled or failed job cannot replace an earlier export.
+Only files actually created by this job are removed on cancellation, error or an escaped panic;
+unrelated files and the destination directory remain. PNG sequences and animated GIF share
+the engine renderer. The document and playhead are unchanged.
+
+Cancellation suppresses the request response and stops at a frame boundary (the current
+frame/encoding may finish first). Unknown request ids are ignored. Render Video stays a
+synchronous command even with `wait:false`; other job-capable commands keep their existing
+`jobs_list`/`jobs_cancel` behavior. Batch exports do not emit MCP progress or support per-step
+MCP cancellation. Nested engine actions and bridge Render Video remain denied by the existing
+ambient-filesystem policy; the new scoped writer is available for direct headless commands.

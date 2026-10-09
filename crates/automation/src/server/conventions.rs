@@ -49,6 +49,13 @@ impl ServerHandler for PhotocraftMcp {
             let args = Value::Object(request.arguments.clone().unwrap_or_default());
             let _: BatchParams = serde_json::from_value(args).map_err(|e| McpError::invalid_params(e.to_string(), None))?;
         }
+        if request.name == "command_run" && matches!(&*self.backend, Backend::Headless(_)) {
+            let args = Value::Object(request.arguments.clone().unwrap_or_default());
+            let params: RunParams = serde_json::from_value(args).map_err(|e| McpError::invalid_params(e.to_string(), None))?;
+            if params.id == "file.export.renderVideo" {
+                return Ok(self.render_video_progress(params.params.unwrap_or_else(|| json!({})), context).await.into());
+            }
+        }
         let tcc = rmcp::handler::server::tool::ToolCallContext::new(self, request, context);
         self.tool_router.call(tcc).await
     }

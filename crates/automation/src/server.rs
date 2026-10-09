@@ -735,6 +735,7 @@ impl PhotocraftMcp {
 }
 
 mod conventions;
+mod progress;
 mod transport;
 
 /// Used by the render helper in tests and the CLI.
